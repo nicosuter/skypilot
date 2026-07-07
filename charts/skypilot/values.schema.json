@@ -79,6 +79,9 @@
                         "type": "object"
                     }
                 },
+                "host": {
+                    "type": "string"
+                },
                 "image": {
                     "type": "string"
                 },
@@ -154,9 +157,6 @@
                 },
                 "persistSSHConfig": {
                     "type": "boolean"
-                },
-                "host": {
-                    "type": "string"
                 },
                 "preDeployHook": {
                     "type": "string"
