@@ -59,9 +59,28 @@ else:
     requests = adaptors_common.LazyImport('requests')
 
 DEFAULT_SERVER_URL = 'http://127.0.0.1:46580'
-AVAILBLE_LOCAL_API_SERVER_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1']
+
+
+def _host_to_url_host(host: str) -> str:
+    """Formats a host for use in a URL, bracketing IPv6 literals.
+
+    IPv6 addresses must be wrapped in square brackets when used in a URL
+    (RFC 3986), e.g. ``http://[::1]:46580``. IPv4 addresses and hostnames are
+    returned unchanged.
+    """
+    if ':' in host and not host.startswith('['):
+        return f'[{host}]'
+    return host
+
+
+# Hosts that the API server can bind to when running locally. ``::`` (and its
+# loopback ``::1``) enable IPv6 / dual-stack binding.
+AVAILBLE_LOCAL_API_SERVER_HOSTS = [
+    '0.0.0.0', 'localhost', '127.0.0.1', '::', '::1'
+]
 AVAILABLE_LOCAL_API_SERVER_URLS = [
-    f'http://{host}:46580' for host in AVAILBLE_LOCAL_API_SERVER_HOSTS
+    f'http://{_host_to_url_host(host)}:46580'
+    for host in AVAILBLE_LOCAL_API_SERVER_HOSTS
 ]
 
 API_SERVER_CMD = '-m sky.server.server'
@@ -433,7 +452,7 @@ async def make_authenticated_request_async(
 def get_server_url(host: Optional[str] = None) -> str:
     endpoint = DEFAULT_SERVER_URL
     if host is not None:
-        endpoint = f'http://{host}:46580'
+        endpoint = f'http://{_host_to_url_host(host)}:46580'
 
     url = os.environ.get(
         constants.SKY_API_SERVER_URL_ENV_VAR,

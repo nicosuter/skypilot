@@ -155,6 +155,9 @@
                 "persistSSHConfig": {
                     "type": "boolean"
                 },
+                "host": {
+                    "type": "string"
+                },
                 "preDeployHook": {
                     "type": "string"
                 },

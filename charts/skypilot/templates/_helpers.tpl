@@ -148,7 +148,7 @@ false
 
 {{/* API server start arguments */}}
 {{- define "skypilot.apiArgs" -}}
---deploy{{ if include "skypilot.enableBasicAuthInAPIServer" . | trim | eq "true" }} --enable-basic-auth{{ end }}
+--deploy{{ if include "skypilot.enableBasicAuthInAPIServer" . | trim | eq "true" }} --enable-basic-auth{{ end }}{{ if .Values.apiService.host }} --host={{ .Values.apiService.host }}{{ end }}
 {{- end -}}
 
 {{- define "skypilot.oauth2ProxyURL" -}}

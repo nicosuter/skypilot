@@ -303,6 +303,60 @@ def test_get_dashboard_url():
         server_url='http://example.com') == 'http://example.com/dashboard'
 
 
+def _isolate_server_url(monkeypatch):
+    """Neutralize env/config endpoint overrides so the host arg is honored."""
+    monkeypatch.delenv(common.constants.SKY_API_SERVER_URL_ENV_VAR,
+                       raising=False)
+    # get_server_url() falls back to the constructed endpoint when the config
+    # has no api_server.endpoint set; force that fallback path.
+    monkeypatch.setattr(
+        common.skypilot_config,
+        'get_nested',
+        lambda keys, default_value=None, *args, **kwargs: default_value)
+    common.get_server_url.cache_clear()
+
+
+def test_host_to_url_host_brackets_ipv6():
+    """IPv6 literals are bracketed for URLs; IPv4/hostnames are unchanged."""
+    assert common._host_to_url_host('::') == '[::]'
+    assert common._host_to_url_host('::1') == '[::1]'
+    # Already-bracketed input is left as-is (not double-bracketed).
+    assert common._host_to_url_host('[::1]') == '[::1]'
+    assert common._host_to_url_host('127.0.0.1') == '127.0.0.1'
+    assert common._host_to_url_host('0.0.0.0') == '0.0.0.0'
+    assert common._host_to_url_host('localhost') == 'localhost'
+
+
+def test_get_server_url_ipv6(monkeypatch):
+    """get_server_url brackets IPv6 hosts and leaves IPv4/hostnames alone."""
+    _isolate_server_url(monkeypatch)
+    assert common.get_server_url('::') == 'http://[::]:46580'
+    common.get_server_url.cache_clear()
+    assert common.get_server_url('::1') == 'http://[::1]:46580'
+    common.get_server_url.cache_clear()
+    assert common.get_server_url('127.0.0.1') == 'http://127.0.0.1:46580'
+    common.get_server_url.cache_clear()
+    assert common.get_server_url('0.0.0.0') == 'http://0.0.0.0:46580'
+    common.get_server_url.cache_clear()
+    assert common.get_server_url('localhost') == 'http://localhost:46580'
+
+
+def test_available_local_api_server_urls_are_wellformed():
+    """The precomputed local URLs bracket IPv6 and parse correctly."""
+    from urllib.parse import urlparse
+
+    # IPv6 hosts are present and bracketed; IPv4 hosts are plain.
+    assert 'http://[::]:46580' in common.AVAILABLE_LOCAL_API_SERVER_URLS
+    assert 'http://[::1]:46580' in common.AVAILABLE_LOCAL_API_SERVER_URLS
+    assert 'http://127.0.0.1:46580' in common.AVAILABLE_LOCAL_API_SERVER_URLS
+    # Every entry is a well-formed URL that urlparse can decompose.
+    for url in common.AVAILABLE_LOCAL_API_SERVER_URLS:
+        parsed = urlparse(url)
+        assert parsed.scheme == 'http'
+        assert parsed.port == 46580
+        assert parsed.hostname
+
+
 def test_cookies_get_no_file(monkeypatch):
     """Test getting cookies from local file."""
 

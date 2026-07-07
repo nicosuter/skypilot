@@ -131,6 +131,41 @@ def test_api_info_with_cookie_file(set_api_cookie_jar):
             assert mock_make_request.call_args[0] == ('GET', '/api/health')
 
 
+@pytest.mark.parametrize(
+    'deploy,host,expected_host',
+    [
+        # deploy with the default host binds all interfaces for remote access.
+        (True, '127.0.0.1', '0.0.0.0'),
+        # An explicitly provided host is respected under deploy (IPv6 dual-stack).
+        (True, '::', '::'),
+        (True, '::1', '::1'),
+        # An explicit IPv4 wildcard under deploy is respected.
+        (True, '0.0.0.0', '0.0.0.0'),
+        # Non-deploy leaves the host untouched.
+        (False, '127.0.0.1', '127.0.0.1'),
+        (False, '::1', '::1'),
+    ])
+def test_api_start_host_resolution(deploy, host, expected_host):
+    """api_start resolves/validates the bind host and forwards it to start."""
+    with mock.patch('sky.server.common.is_api_server_local',
+                    return_value=True), \
+         mock.patch('sky.server.common.check_server_healthy_or_start_fn'
+                   ) as mock_start:
+        client_sdk.api_start(deploy=deploy, host=host)
+    assert mock_start.call_count == 1
+    # check_server_healthy_or_start_fn(deploy, host, foreground, ...)
+    assert mock_start.call_args[0][1] == expected_host
+
+
+def test_api_start_rejects_invalid_host():
+    """api_start rejects hosts outside the local allowlist."""
+    with mock.patch('sky.server.common.is_api_server_local',
+                    return_value=True), \
+         mock.patch('sky.server.common.check_server_healthy_or_start_fn'):
+        with pytest.raises(ValueError, match='Invalid host'):
+            client_sdk.api_start(deploy=False, host='192.168.1.5')
+
+
 def test_api_login(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     # Create a temporary config file
     config_path = tmp_path / "config.yaml"
