@@ -357,6 +357,68 @@ def test_available_local_api_server_urls_are_wellformed():
         assert parsed.hostname
 
 
+def test_reachable_local_host():
+    """Wildcard bind hosts map to loopback; others pass through."""
+    assert common._reachable_local_host('0.0.0.0') == '127.0.0.1'
+    assert common._reachable_local_host('::') == '::1'
+    # Loopback and hostname inputs are unchanged.
+    assert common._reachable_local_host('::1') == '::1'
+    assert common._reachable_local_host('127.0.0.1') == '127.0.0.1'
+    assert common._reachable_local_host('localhost') == 'localhost'
+
+
+def test_get_local_server_dial_url(monkeypatch):
+    """Dial URL maps wildcard hosts to loopback and brackets IPv6."""
+    _isolate_server_url(monkeypatch)
+    # IPv6 wildcard is dialed via the bracketed IPv6 loopback.
+    assert common.get_local_server_dial_url('::') == 'http://[::1]:46580'
+    common.get_server_url.cache_clear()
+    # IPv4 wildcard is dialed via IPv4 loopback (a valid connect target).
+    assert common.get_local_server_dial_url(
+        '0.0.0.0') == 'http://127.0.0.1:46580'
+    common.get_server_url.cache_clear()
+    assert common.get_local_server_dial_url('::1') == 'http://[::1]:46580'
+    common.get_server_url.cache_clear()
+    assert common.get_local_server_dial_url(
+        '127.0.0.1') == 'http://127.0.0.1:46580'
+
+
+@pytest.mark.parametrize('host,expected_dial_url', [
+    ('::', 'http://[::1]:46580'),
+    ('::1', 'http://[::1]:46580'),
+    ('0.0.0.0', 'http://127.0.0.1:46580'),
+    ('127.0.0.1', 'http://127.0.0.1:46580'),
+])
+def test_start_api_server_polls_reachable_host(monkeypatch, host,
+                                               expected_dial_url):
+    """The startup poll dials the reachable loopback, not the bind host.
+
+    Regression test: a server bound to ``::1`` does not listen on 127.0.0.1,
+    so polling the hard-coded loopback would time out and orphan the server.
+    """
+    _isolate_server_url(monkeypatch)
+
+    proc = mock.Mock()
+    proc.poll.return_value = None  # Process stays alive.
+    # Server reports a non-dev version so the dashboard-staleness branch is
+    # skipped; only .version is read there.
+    status_info = mock.Mock(version='1.0.0')
+
+    monkeypatch.setattr(common, 'is_api_server_local', lambda *a, **k: True)
+    monkeypatch.setattr(common.subprocess, 'Popen', lambda *a, **k: proc)
+    monkeypatch.setattr(common.os, 'makedirs', lambda *a, **k: None)
+    monkeypatch.setattr(common, 'get_api_server_status',
+                        lambda url: status_info)
+    mock_health = mock.Mock(return_value=(ApiServerStatus.HEALTHY, status_info))
+    monkeypatch.setattr(common, 'check_server_healthy', mock_health)
+
+    with mock.patch('builtins.open', mock.mock_open()):
+        common._start_api_server(deploy=False, host=host)
+
+    # The poll dials the reachable loopback URL for the bind host.
+    mock_health.assert_called_once_with(expected_dial_url)
+
+
 def test_cookies_get_no_file(monkeypatch):
     """Test getting cookies from local file."""
 

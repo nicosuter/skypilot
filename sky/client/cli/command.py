@@ -7871,7 +7871,10 @@ def api_start(deploy: bool, host: str, foreground: bool,
                   foreground=foreground,
                   enable_basic_auth=enable_basic_auth)
     api_server_url = server_common.get_server_url(host)
-    api_server_info = server_common.get_api_server_status(api_server_url)
+    # Dial via a reachable loopback URL: wildcard bind hosts (0.0.0.0 / ::) are
+    # not valid connect targets on all platforms.
+    api_server_info = server_common.get_api_server_status(
+        server_common.get_local_server_dial_url(host))
     server_common.check_and_print_upgrade_hint(api_server_info, api_server_url)
 
 

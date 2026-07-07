@@ -460,6 +460,28 @@ def get_server_url(host: Optional[str] = None) -> str:
     return url.rstrip('/')
 
 
+# Wildcard bind addresses (0.0.0.0 / ::) are valid to *bind* but are not
+# reliable *connect* targets (Windows rejects them; macOS rejects :: with
+# bindv6only=1). When dialing a server we just started locally, translate the
+# wildcard to the loopback of the same family. Loopback/hostname inputs pass
+# through unchanged.
+_BIND_HOST_TO_LOOPBACK = {'0.0.0.0': '127.0.0.1', '::': '::1'}
+
+
+def _reachable_local_host(host: str) -> str:
+    return _BIND_HOST_TO_LOOPBACK.get(host, host)
+
+
+def get_local_server_dial_url(host: str) -> str:
+    """URL to connect to a locally-started server bound to ``host``.
+
+    Wildcard bind hosts are mapped to loopback so the URL is a valid connect
+    target on all platforms. Honors env/config endpoint overrides via
+    ``get_server_url``.
+    """
+    return get_server_url(_reachable_local_host(host))
+
+
 @annotations.lru_cache(scope='global')
 def get_dashboard_url(server_url: str,
                       starting_page: Optional[str] = None) -> str:
@@ -673,6 +695,10 @@ def _start_api_server(deploy: bool = False,
     server_url = get_server_url(host)
     assert server_url in AVAILABLE_LOCAL_API_SERVER_URLS, (
         f'server url {server_url} is not a local url')
+    # URL to *dial* the server we are about to start. Differs from server_url
+    # for wildcard bind hosts (0.0.0.0 / ::), which are not valid connect
+    # targets on all platforms; see get_local_server_dial_url.
+    health_url = get_local_server_dial_url(host)
 
     with rich_utils.client_status('Starting SkyPilot API server, '
                                   f'view logs at {constants.API_SERVER_LOGS}'):
@@ -771,7 +797,7 @@ def _start_api_server(deploy: bool = False,
             try:
                 # Clear the cache to ensure fresh checks during startup
                 get_api_server_status_response.cache_clear()  # type: ignore
-                check_server_healthy()
+                check_server_healthy(health_url)
             except exceptions.APIVersionMismatchError:
                 raise
             except Exception as e:  # pylint: disable=broad-except
@@ -786,9 +812,8 @@ def _start_api_server(deploy: bool = False,
             else:
                 break
 
-        server_url = get_server_url(host)
         dashboard_msg = ''
-        api_server_info = get_api_server_status(server_url)
+        api_server_info = get_api_server_status(health_url)
         if api_server_info.version == versions.DEV_VERSION:
             dashboard_msg += (
                 f'\n{colorama.Style.RESET_ALL}{ux_utils.INDENT_SYMBOL}'
