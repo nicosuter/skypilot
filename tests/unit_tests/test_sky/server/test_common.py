@@ -407,6 +407,9 @@ def test_start_api_server_polls_reachable_host(monkeypatch, host,
     monkeypatch.setattr(common, 'is_api_server_local', lambda *a, **k: True)
     monkeypatch.setattr(common.subprocess, 'Popen', lambda *a, **k: proc)
     monkeypatch.setattr(common.os, 'makedirs', lambda *a, **k: None)
+    # Avoid probing real host memory (psutil raises KeyError: b'MemTotal:' on
+    # some sandboxed CI runners); the value only drives a warning message.
+    monkeypatch.setattr(common.common_utils, 'get_mem_size_gb', lambda: 16.0)
     monkeypatch.setattr(common, 'get_api_server_status',
                         lambda url: status_info)
     mock_health = mock.Mock(return_value=(ApiServerStatus.HEALTHY, status_info))
