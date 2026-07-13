@@ -155,6 +155,16 @@ false
 http://{{ include "skypilot.fullname" . }}-oauth2-proxy:4180
 {{- end -}}
 
+{{/* oauth2-proxy HTTP bind address; mirrors apiService.host address family so an
+     IPv6 (e.g. "::") deployment binds a wildcard the pod's IPv6 network can reach. */}}
+{{- define "skypilot.oauth2HttpAddress" -}}
+{{- if and .Values.apiService.host (contains ":" .Values.apiService.host) -}}
+[::]:4180
+{{- else -}}
+0.0.0.0:4180
+{{- end -}}
+{{- end -}}
+
 {{- define "skypilot.ingressBasicAuthEnabled" -}}
 {{- if and .Values.ingress.enabled (or .Values.ingress.authSecret .Values.ingress.authCredentials) -}}
 true
