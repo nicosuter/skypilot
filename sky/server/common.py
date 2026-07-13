@@ -951,12 +951,8 @@ def check_server_healthy_or_start_fn(deploy: bool = False,
     # This function will set remote api version and remote version
     # on the current thread's ContextVars.
     api_server_status = None
-    # Probe the server on the URL that dials the requested bind ``host`` (the
-    # loopback of the same address family for wildcard binds), rather than the
-    # IPv4 default. Otherwise an already-running IPv6-only server (e.g. bound to
-    # ``::1``) is not seen on 127.0.0.1 and we would wrongly try to start a
-    # second server on the in-use port. Matches the post-start probe in
-    # _start_api_server. Honors endpoint overrides via get_server_url.
+    # Probe on the same address family as --host; an IPv6-only server
+    # isn't visible on the 127.0.0.1 default and would be double-started.
     endpoint = get_local_server_dial_url(host)
     try:
         api_server_status, _ = check_server_healthy(endpoint)
