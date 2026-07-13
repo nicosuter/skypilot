@@ -134,13 +134,16 @@ def test_api_info_with_cookie_file(set_api_cookie_jar):
 @pytest.mark.parametrize(
     'deploy,host,expected_host',
     [
-        # deploy with the default host binds all interfaces for remote access.
+        # Deploy always binds a wildcard for remote access.
         (True, '127.0.0.1', '0.0.0.0'),
-        # An explicitly provided host is respected under deploy (IPv6 dual-stack).
-        (True, '::', '::'),
-        (True, '::1', '::1'),
-        # An explicit IPv4 wildcard under deploy is respected.
+        (True, 'localhost', '0.0.0.0'),
         (True, '0.0.0.0', '0.0.0.0'),
+        # Any IPv6 host under deploy binds the IPv6 wildcard.
+        (True, '::', '::'),
+        (True, '::1', '::'),
+        # A full-length IPv6 literal (no '::') is still detected; the deploy
+        # override runs before allowlist validation, so '::' passes.
+        (True, '2001:db8:0:0:0:0:0:1', '::'),
         # Non-deploy leaves the host untouched.
         (False, '127.0.0.1', '127.0.0.1'),
         (False, '::1', '::1'),

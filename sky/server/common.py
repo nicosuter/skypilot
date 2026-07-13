@@ -5,6 +5,7 @@ import enum
 import functools
 from http.cookiejar import CookieJar
 from http.cookiejar import MozillaCookieJar
+import ipaddress
 import os
 import pathlib
 import re
@@ -470,6 +471,14 @@ _BIND_HOST_TO_LOOPBACK = {'0.0.0.0': '127.0.0.1', '::': '::1'}
 
 def _reachable_local_host(host: str) -> str:
     return _BIND_HOST_TO_LOOPBACK.get(host, host)
+
+
+def is_ipv6_host(host: str) -> bool:
+    """True if ``host`` is an IPv6 literal."""
+    try:
+        return ipaddress.ip_address(host).version == 6
+    except ValueError:
+        return False
 
 
 def get_local_server_dial_url(host: str) -> str:

@@ -357,6 +357,16 @@ def test_available_local_api_server_urls_are_wellformed():
         assert parsed.hostname
 
 
+def test_is_ipv6_host():
+    assert common.is_ipv6_host('::')
+    assert common.is_ipv6_host('::1')
+    assert common.is_ipv6_host('2001:db8:0:0:0:0:0:1')
+    assert not common.is_ipv6_host('127.0.0.1')
+    assert not common.is_ipv6_host('0.0.0.0')
+    assert not common.is_ipv6_host('localhost')
+    assert not common.is_ipv6_host('example.org')
+
+
 def test_reachable_local_host():
     """Wildcard bind hosts map to loopback; others pass through."""
     assert common._reachable_local_host('0.0.0.0') == '127.0.0.1'

@@ -2638,9 +2638,10 @@ def api_start(
     Args:
         deploy: Whether to deploy the API server, i.e. fully utilize the
             resources of the machine.
-        host: The host to bind the API server to. Under deploy, a host of
-            127.0.0.1 (the loopback default) is overwritten with 0.0.0.0 to
-            allow remote access; any other value is used as-is.
+        host: The host to bind the API server to. Under deploy, the server
+            always binds a wildcard address for remote access: ``::`` when an
+            IPv6 host is given, otherwise ``0.0.0.0``. Without deploy the host
+            is used as-is.
         foreground: Whether to run the API server in the foreground (run in
             the current process).
         metrics: Whether to export metrics of the API server.
@@ -2650,10 +2651,10 @@ def api_start(
     Returns:
         None
     """
-    if deploy and host == '127.0.0.1':
-        # Under deploy, overwrite the default loopback host with 0.0.0.0 to bind
-        # all interfaces for remote access. Any other host is used as-is.
-        host = '0.0.0.0'
+    if deploy:
+        # Deploy mode is for remote access, so always bind a wildcard of the
+        # requested host's address family.
+        host = '::' if server_common.is_ipv6_host(host) else '0.0.0.0'
     if host not in server_common.AVAILBLE_LOCAL_API_SERVER_HOSTS:
         raise ValueError(f'Invalid host: {host}. Should be one of: '
                          f'{server_common.AVAILBLE_LOCAL_API_SERVER_HOSTS}')

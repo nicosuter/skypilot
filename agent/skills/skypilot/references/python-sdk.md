@@ -982,9 +982,10 @@ exist.
 **Args:**
     deploy: Whether to deploy the API server, i.e. fully utilize the
         resources of the machine.
-    host: The host to bind the API server to. Under deploy, a host of
-        127.0.0.1 (the loopback default) is overwritten with 0.0.0.0 to
-        allow remote access; any other value is used as-is.
+    host: The host to bind the API server to. Under deploy, the server
+        always binds a wildcard address for remote access: ``::`` when an
+        IPv6 host is given, otherwise ``0.0.0.0``. Without deploy the host
+        is used as-is.
     foreground: Whether to run the API server in the foreground (run in
         the current process).
     metrics: Whether to export metrics of the API server.

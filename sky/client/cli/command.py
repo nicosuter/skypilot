@@ -7839,8 +7839,9 @@ def api():
               help=('Deploy the SkyPilot API server. When set to True, '
                     'SkyPilot API server will use all resources on the host '
                     'machine assuming the machine is dedicated to SkyPilot API '
-                    'server; host will also be set to 0.0.0.0 to allow remote '
-                    'access, unless an explicit --host is given.'))
+                    'server; host will also be set to a wildcard address '
+                    '(0.0.0.0, or :: when an IPv6 --host is given) '
+                    'to allow remote access.'))
 @click.option('--host',
               default='127.0.0.1',
               type=click.Choice(server_common.AVAILBLE_LOCAL_API_SERVER_HOSTS),
