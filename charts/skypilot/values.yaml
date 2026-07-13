@@ -22,9 +22,8 @@ apiService:
   # Number of replicas to deploy - replicas > 1 is not well tested.
   replicas: 1
   # Interface the API server binds to: "0.0.0.0" for IPv4 (the default) or "::"
-  # for IPv6 dual-stack. Allowed values: "0.0.0.0", "localhost", "127.0.0.1",
-  # "::", "::1". IPv4/v6 loopback values get overridden to "0.0.0.0" and "::",
-  # respectively.
+  # for IPv6 dual-stack.
+  # @schema enum: ["0.0.0.0", "::"]
   host: "0.0.0.0"
   preDeployHook: |-
     # Run commands before deploying the API server, e.g. installing an admin policy.

@@ -587,21 +587,6 @@ tests:
           path: spec.template.spec.containers[0].args
           content: "--http-address=[::]:4180"
 
-  - it: should bind oauth2-proxy to the IPv6 wildcard for the IPv6 loopback host
-    set:
-      auth.oauth.enabled: false
-      ingress.enabled: true
-      ingress.oauth2-proxy.enabled: true
-      ingress.oauth2-proxy.oidc-issuer-url: "https://example.okta.com/oauth2/default"
-      ingress.oauth2-proxy.client-id: "test-client-id"
-      ingress.oauth2-proxy.client-secret: "test-client-secret"
-      apiService.host: "::1"
-    template: templates/oauth2-proxy-deployment.yaml
-    asserts:
-      - contains:
-          path: spec.template.spec.containers[0].args
-          content: "--http-address=[::]:4180"
-
   # oauth2-proxy and redis Services mirror api-service: dual-stack only when the
   # apiService.host bind is IPv6, single-stack (no policy) otherwise.
   - it: should not set ipFamilyPolicy on oauth2 services by default

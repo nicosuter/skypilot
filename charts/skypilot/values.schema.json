@@ -80,7 +80,11 @@
                     }
                 },
                 "host": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "0.0.0.0",
+                        "::"
+                    ]
                 },
                 "image": {
                     "type": "string"

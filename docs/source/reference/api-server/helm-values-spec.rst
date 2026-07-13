@@ -464,7 +464,7 @@ Host/interface the API server binds to. Defaults to ``0.0.0.0`` (all IPv4 interf
 
 Set to ``::`` to bind IPv6 dual-stack (accepts both IPv6 and IPv4 traffic on dual-stack hosts). An IPv6 host also enables ``ipFamilyPolicy: PreferDualStack`` on the API server :ref:`Service <helm-values-apiService>` so IPv6 clients can reach it end-to-end.
 
-Allowed values: ``0.0.0.0``, ``localhost``, ``127.0.0.1``, ``::``, ``::1``.
+Allowed values: ``0.0.0.0`` or ``::``.
 
 Default: ``"0.0.0.0"``
 

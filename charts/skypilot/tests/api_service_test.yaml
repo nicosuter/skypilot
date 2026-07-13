@@ -24,11 +24,3 @@ tests:
       - equal:
           path: spec.ipFamilyPolicy
           value: PreferDualStack
-
-  - it: should enable dual-stack ipFamilyPolicy for the IPv6 loopback host
-    set:
-      apiService.host: "::1"
-    asserts:
-      - equal:
-          path: spec.ipFamilyPolicy
-          value: PreferDualStack
